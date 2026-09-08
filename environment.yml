@@ -1,0 +1,8 @@
+name: demand-forecasting
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip=23.3.1

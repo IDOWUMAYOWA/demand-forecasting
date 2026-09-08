@@ -1,0 +1,31 @@
+# Data
+data/raw_data/*
+data/prod_data/*
+!data/raw_data/.gitkeep
+!data/prod_data/.gitkeep
+
+# Models
+models/experiments/*
+models/prod/*
+!models/experiments/.gitkeep
+!models/prod/.gitkeep
+
+# CatBoost training artifacts
+catboost_info/
+**/catboost_info/
+
+# Jupyter
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Windows/WSL artifacts
+*:Zone.Identifier
+
+# IDE
+.idea/
+.vscode/

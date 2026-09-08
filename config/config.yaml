@@ -1,0 +1,20 @@
+ui:
+# user interface parameters
+
+inference_api:
+# Production Inference Parameters
+
+data_manager:
+# Data Manager Parameters
+
+pipeline_runner:
+# Pipeline Runner Parameters
+
+preprocessing:
+# Preprocessing Pipeline Parameters
+
+feature_engineering:
+# Feature Engineering parameters
+
+training:
+# Training Pipeline Parameters

@@ -1,0 +1,23 @@
+# Docker compose file that runs all the services in production
+
+# services:
+    # =============================================================================
+    # ML MODEL TRAINING SERVICE
+    # =============================================================================
+
+    # app-ml-train:
+      # Commands for the model training service
+
+    # =============================================================================
+    # ML INFERENCE API SERVICE
+    # =============================================================================
+
+    # app-ml-inference-api:
+      # Commands for the model inference service
+
+    # =============================================================================
+    # WEB USER INTERFACE SERVICE
+    # =============================================================================
+
+    # app-ui:
+      # Commands to run User Interface Service
