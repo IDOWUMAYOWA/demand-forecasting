@@ -26,7 +26,7 @@ class PreprocessingPipeline:
         df = df.copy()
 
         if is_train:
-            df['target'] = df['cnt'].shift(-1).fillna(method='ffill')
+            df['target'] = df['cnt'].shift(-1).ffill()
 
         cols_to_drop = [c for c in self.drop_cols if c in df.columns]
         df = df.drop(columns=cols_to_drop)

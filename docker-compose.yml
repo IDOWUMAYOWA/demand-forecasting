@@ -1,23 +1,126 @@
 # Docker compose file that runs all the services in production
 
-# services:
-    # =============================================================================
-    # ML MODEL TRAINING SERVICE
-    # =============================================================================
+services:
+  # =============================================================================
+  # ML MODEL TRAINING SERVICE
+  # =============================================================================
+  app-ml-train:
+    build:
+      context: .
+      dockerfile: app-ml/Dockerfile
+    command: python app-ml/entrypoint/train.py
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    # A training job runs once and exits — it shouldn't restart in a loop.
+    restart: "no"
 
-    # app-ml-train:
-      # Commands for the model training service
+  # =============================================================================
+  # ML INFERENCE API SERVICE
+  # =============================================================================
+  app-ml-inference-api:
+    build:
+      context: .
+      dockerfile: app-ml/Dockerfile
+    command: python app-ml/entrypoint/inference_api.py
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    # A long-running API server should come back up if it crashes.
+    restart: unless-stopped
+    depends_on:
+      - app-ml-train
 
-    # =============================================================================
-    # ML INFERENCE API SERVICE
-    # =============================================================================
+  # =============================================================================
+  # WEB USER INTERFACE SERVICE
+  # =============================================================================
+  app-ui:
+    build:
+      context: .
+      dockerfile: app-ui/Dockerfile
+    ports:
+      - "8050:8050"
+    environment:
+      - INFERENCE_API_HOST=app-ml-inference-api
+      - INFERENCE_API_PORT=5001
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - app-ml-inference-api
+    restart: unless-stopped
 
-    # app-ml-inference-api:
-      # Commands for the model inference service
+  # =============================================================================
+  # AIRFLOW METADATA DATABASE
+  # =============================================================================
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: unless-stopped
 
-    # =============================================================================
-    # WEB USER INTERFACE SERVICE
-    # =============================================================================
+  # =============================================================================
+  # AIRFLOW ONE-TIME DB INIT + ADMIN USER SETUP
+  # =============================================================================
+  airflow-init:
+    image: apache/airflow:2.9.3
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-docker
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - "airflow db init && airflow users create --username admin --password admin --firstname Air --lastname Flow --role Admin --email admin@example.com"
 
-    # app-ui:
-      # Commands to run User Interface Service
+  # =============================================================================
+  # AIRFLOW WEBSERVER (UI, port 8080)
+  # =============================================================================
+  airflow-webserver:
+    image: apache/airflow:2.9.3
+    depends_on:
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-docker
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080"
+    command: webserver
+    restart: unless-stopped
+
+  # =============================================================================
+  # AIRFLOW SCHEDULER (executes DAGs)
+  # =============================================================================
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    depends_on:
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-docker
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: scheduler
+    restart: unless-stopped
+
+volumes:
+  postgres-db-volume:

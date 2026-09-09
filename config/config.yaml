@@ -1,7 +1,12 @@
-ui:
 # user interface parameters
+ui:
+  history_hours: 48
+
 # Production Inference Parameters
 inference_api:
+  host: localhost
+  port: 5001
+  endpoint: /run-inference
 
 # Data Manager Parameters
 data_manager:
