@@ -1,33 +1,28 @@
-"""
-Training Pipeline Entrypoint
-- Loads configuration
-- Runs the full training pipeline (preprocessing, feature engineering, training, postprocessing)
-"""
-
+import os
 import sys
 from pathlib import Path
 
-project_root = Path(__file__).resolve().parent.parent.parent
+project_root = Path(__file__).resolve().parents[2]
+os.chdir(project_root)
 sys.path.append(str(project_root))
-sys.path.append(str(project_root / 'app-ml' /'src'))
+sys.path.append(str(project_root / 'app-ml' / 'src'))
 
 from common.utils import read_config
+from common.data_manager import DataManager
 from pipelines.pipeline_runner import PipelineRunner
 
 
-if __name__ == "__main__":
+def main():
+    config = read_config('config/config.yaml')
+    data_manager = DataManager(config=config)
 
-    # Load config file
-    config_path = project_root / 'config' / 'config.yaml'
-    config = read_config(config_path)
+    df = data_manager.load_data(config['data_manager']['raw_data_path'])
 
-    """
-    Load data to train am ML model
-    df = ...
-    """
+    runner = PipelineRunner(config=config, data_manager=data_manager)
+    runner.run_training(df=df)
 
-    # Initialize Pipeline Runner
-    pipeline_runner = PipelineRunner(config=config)
+    print(f"Training complete. Model saved to {config['data_manager']['model_path']}")
 
-    # Run the training pipeline
-    pipeline_runner.run_training(df)
+
+if __name__ == '__main__':
+    main()

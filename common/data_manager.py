@@ -1,6 +1,6 @@
 import pandas as pd
+from pathlib import Path
 from typing import Dict, Any
-
 
 
 class DataManager:
@@ -10,44 +10,44 @@ class DataManager:
     """
 
     def __init__(self, config: Dict[str, Any]):
-        """
-        Initialize the DataManager with a configuration dictionary.
-
-        Args:
-            config (Dict[str, Any]): Configuration parameters for paths and filenames.
-        """
         self.config = config
 
-    @staticmethod
-    def append_data(data_to_append) -> pd.DataFrame:
+    def append_data(self, new_data: pd.DataFrame) -> pd.DataFrame:
         """
-        Append new data to an existing DataFrame and reset the index.
+        Append new incoming data to the existing production data history,
+        persist the updated history back to disk, and return it.
+
+        Args:
+            new_data (pd.DataFrame): The newly arrived row(s) to append.
+
+        Returns:
+            pd.DataFrame: The full, updated historical dataset — this is what
+                gets passed into the pipeline so lag features have real data
+                to compute from, not just the new row in isolation.
         """
+        prod_path = Path(self.config['data_manager']['prod_data_path'])
+
+        if prod_path.exists():
+            existing = self.load_data(str(prod_path))
+            df_updated = pd.concat([existing, new_data], ignore_index=True)
+        else:
+            df_updated = new_data.copy()
+
+        if 'datetime' in df_updated.columns:
+            df_updated = df_updated.drop_duplicates(subset='datetime', keep='last')
+            df_updated = df_updated.sort_values('datetime')
+
+        df_updated = df_updated.reset_index(drop=True)
+
+        self.save_data(df_updated, str(prod_path))
+
         return df_updated
 
     @staticmethod
     def load_data(path: str) -> pd.DataFrame:
-        """
-        Load a DataFrame from a parquet file.
-
-        Args:
-            path (str): Path to the parquet file.
-
-        Returns:
-            pd.DataFrame: Loaded data.
-        """
         return pd.read_parquet(path)
 
     @staticmethod
     def save_data(data: pd.DataFrame, path: str) -> None:
-        """
-        Save a DataFrame to a CSV file.
-
-        Args:
-            data (pd.DataFrame): Data to be saved.
-            path (str): Output file path.
-
-        Returns:
-            None
-        """
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
         data.to_parquet(path, index=False)

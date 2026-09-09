@@ -1,20 +1,46 @@
 ui:
 # user interface parameters
-
-inference_api:
 # Production Inference Parameters
+inference_api:
 
-data_manager:
 # Data Manager Parameters
+data_manager:
+  raw_data_path: data/raw_data/raw_data_full.parquet
+  prod_data_path: data/prod_data/prod_data.parquet
+  model_path: models/prod/catboost_model.cbm
 
-pipeline_runner:
 # Pipeline Runner Parameters
+pipeline_runner:
 
-preprocessing:
 # Preprocessing Pipeline Parameters
+preprocessing:
+  drop_cols:
+    - yr
+    - casual
+    - registered
+    - datetime
 
-feature_engineering:
+
 # Feature Engineering parameters
+feature_engineering:
+  target_lag_col: cnt
+  target_lags: [1, 2, 22, 23]
+  lag_features:
+    - hr
+    - weekday
+    - weathersit
+    - temp
+    - hum
+  n_feature_lags: 3
 
-training:
 # Training Pipeline Parameters
+training:
+  target_col: target
+  model_params:
+    learning_rate: 0.1833096275220571
+    depth: 4
+    l2_leaf_reg: 0.9607590220357451
+    iterations: 416
+    loss_function: RMSE
+    verbose: 0
+    random_seed: 42
