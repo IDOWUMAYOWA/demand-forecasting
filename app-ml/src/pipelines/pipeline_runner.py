@@ -46,7 +46,7 @@ class PipelineRunner:
         Returns:
             None
         """
-        df = self.preprocessing_pipeline.run(df=df)
+        df = self.preprocessing_pipeline.run(df=df, is_train=True)
         df = self.feature_eng_pipeline.run(df=df)
         model = self.training_pipeline.run(df)
         self.postprocessing_pipeline.run_train(model=model)
@@ -62,7 +62,7 @@ class PipelineRunner:
             None
         """
         # Step 1: Run preprocessing and feature engineering
-        df = self.preprocessing_pipeline.run(df=df)
+        df = self.preprocessing_pipeline.run(df=df, is_train=False)
         df = self.feature_eng_pipeline.run(df=df)
 
         # Step 2: Run inference
