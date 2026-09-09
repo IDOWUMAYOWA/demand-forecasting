@@ -12,7 +12,6 @@ services:
     volumes:
       - ./data:/app/data
       - ./models:/app/models
-    # A training job runs once and exits — it shouldn't restart in a loop.
     restart: "no"
 
   # =============================================================================
@@ -28,7 +27,6 @@ services:
     volumes:
       - ./data:/app/data
       - ./models:/app/models
-    # A long-running API server should come back up if it crashes.
     restart: unless-stopped
     depends_on:
       - app-ml-train
@@ -72,13 +70,14 @@ services:
   # AIRFLOW ONE-TIME DB INIT + ADMIN USER SETUP
   # =============================================================================
   airflow-init:
-    image: apache/airflow:2.9.3
+    build:
+      context: ./airflow
     depends_on:
       - postgres
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-docker
+      AIRFLOW__WEBSERVER__SECRET_KEY: "a-fixed-dev-secret-change-me"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
     entrypoint: /bin/bash
@@ -87,7 +86,7 @@ services:
       - "airflow db init && airflow users create --username admin --password admin --firstname Air --lastname Flow --role Admin --email admin@example.com"
 
   # =============================================================================
-  # AIRFLOW WEBSERVER (UI, port 8080)
+  # AIRFLOW WEBSERVER (UI, port 8080) — unchanged, already stable.
   # =============================================================================
   airflow-webserver:
     image: apache/airflow:2.9.3
@@ -96,26 +95,29 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: "a-fixed-dev-secret-change-me"
       _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-docker
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8080:8080"
     command: webserver
     restart: unless-stopped
 
   # =============================================================================
-  # AIRFLOW SCHEDULER (executes DAGs)
+  # AIRFLOW SCHEDULER (executes DAGs) — now uses the pre-built image with
+  # the provider already installed, no more reinstalling on every restart.
   # =============================================================================
   airflow-scheduler:
-    image: apache/airflow:2.9.3
+    build:
+      context: ./airflow
+    user: "0:0"
     depends_on:
       - airflow-init
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-docker
+      AIRFLOW__WEBSERVER__SECRET_KEY: "a-fixed-dev-secret-change-me"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - /var/run/docker.sock:/var/run/docker.sock

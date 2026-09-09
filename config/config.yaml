@@ -49,3 +49,13 @@ training:
     loss_function: RMSE
     verbose: 0
     random_seed: 42
+monitoring:
+  performance:
+    metric: MAE
+    threshold: 40          # baseline tuned CatBoost was ~31; retrain if it drifts past this
+    min_samples: 24        # need at least a day's worth of reconciled predictions before judging
+    log_path: data/prod_data/prediction_log.parquet
+  data_drift:
+    features: [temp, hum, windspeed, cnt]
+    p_value_threshold: 0.05
+    window_hours: 168      # compare last 7 days of incoming data against training baseline
