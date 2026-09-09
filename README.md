@@ -4,9 +4,9 @@
 This system forecasts next-hour bike-share demand from historical usage and weather data, and serves that forecast through a live API and dashboard. Raw hourly rental data is explored and modelled in notebooks, then the winning approach — CatBoost with lag-based feature engineering, tuned offline via Optuna — is translated into five modular, config-driven pipeline classes. Those classes are shared by two independent code paths: a training job that fits and saves the model, and an inference service that predicts the next hour's demand from a rolling window of recent data. A Dash dashboard sits on top of the inference API for interactive use, and Apache Airflow orchestrates the whole system end to end — logging every prediction, checking model performance and input-data drift against the training baseline, and retraining automatically only when the evidence says it's warranted, rather than on a blind fixed schedule.
 
 ## Architecture
-![Architecture](docs/images/architecture.png)
+![Architecture](docs/images/overview.png)
 
-*(See `docs/architecture.drawio` — open in [diagrams.net](https://app.diagrams.net) to view or edit the source.)*
+
 
 ## Data Flow
 1. **Notebook exploration:** `EDA.ipynb` profiles the raw hourly rental data (seasonality, weather effects, the working-day/weekend split in the hourly demand curve); `Modeling.ipynb` establishes a dummy baseline, shows that lag features are what actually move performance, and tunes the final CatBoost model with Optuna.
