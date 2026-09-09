@@ -88,3 +88,29 @@ class DriftMonitor:
             self.check_performance_drift()
             or self.check_data_drift(raw_data_path, prod_data_path)
         )
+    def reconcile_from_history(self, raw_data_path: str) -> None:
+        """
+        Fill in actual_cnt for logged predictions by matching target_hour
+        against real historical data.
+        """
+        log_path = Path(self.perf_cfg['log_path'])
+        if not log_path.exists():
+            return
+
+        log = pd.read_parquet(log_path)
+        unreconciled = log[log['actual_cnt'].isna()]
+        if unreconciled.empty:
+            return
+
+        history = pd.read_parquet(raw_data_path)
+        if 'datetime' not in history.columns:
+            return
+        history['datetime'] = pd.to_datetime(history['datetime'])
+        history = history.set_index('datetime')
+
+        for idx, row in unreconciled.iterrows():
+            target_hour = pd.Timestamp(row['target_hour']).floor('h')
+            if target_hour in history.index:
+                log.loc[idx, 'actual_cnt'] = history.loc[target_hour, 'cnt']
+
+        log.to_parquet(log_path, index=False)

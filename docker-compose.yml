@@ -1,9 +1,6 @@
 # Docker compose file that runs all the services in production
 
 services:
-  # =============================================================================
-  # ML MODEL TRAINING SERVICE
-  # =============================================================================
   app-ml-train:
     build:
       context: .
@@ -14,9 +11,6 @@ services:
       - ./models:/app/models
     restart: "no"
 
-  # =============================================================================
-  # ML INFERENCE API SERVICE
-  # =============================================================================
   app-ml-inference-api:
     build:
       context: .
@@ -31,9 +25,6 @@ services:
     depends_on:
       - app-ml-train
 
-  # =============================================================================
-  # WEB USER INTERFACE SERVICE
-  # =============================================================================
   app-ui:
     build:
       context: .
@@ -49,9 +40,6 @@ services:
       - app-ml-inference-api
     restart: unless-stopped
 
-  # =============================================================================
-  # AIRFLOW METADATA DATABASE
-  # =============================================================================
   postgres:
     image: postgres:13
     environment:
@@ -66,9 +54,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # =============================================================================
-  # AIRFLOW ONE-TIME DB INIT + ADMIN USER SETUP
-  # =============================================================================
   airflow-init:
     build:
       context: ./airflow
@@ -85,9 +70,6 @@ services:
       - -c
       - "airflow db init && airflow users create --username admin --password admin --firstname Air --lastname Flow --role Admin --email admin@example.com"
 
-  # =============================================================================
-  # AIRFLOW WEBSERVER (UI, port 8080) — unchanged, already stable.
-  # =============================================================================
   airflow-webserver:
     image: apache/airflow:2.9.3
     depends_on:
@@ -104,10 +86,6 @@ services:
     command: webserver
     restart: unless-stopped
 
-  # =============================================================================
-  # AIRFLOW SCHEDULER (executes DAGs) — now uses the pre-built image with
-  # the provider already installed, no more reinstalling on every restart.
-  # =============================================================================
   airflow-scheduler:
     build:
       context: ./airflow
@@ -121,6 +99,9 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./common:/opt/airflow/project/common
+      - ./config:/opt/airflow/project/config
+      - ./data:/opt/airflow/project/data
     command: scheduler
     restart: unless-stopped
 

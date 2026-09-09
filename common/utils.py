@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 from typing import Union, Dict, Any
 import pandas as pd
-import plotly.graph_objects as go
+
 
 
 def read_config(path: Union[str, Path]) -> dict:
@@ -17,7 +17,7 @@ def read_config(path: Union[str, Path]) -> dict:
         return yaml.safe_load(f)
 
 
-def make_prediction_figures(history: pd.DataFrame, prediction: Dict[str, Any]) -> go.Figure:
+def make_prediction_figures(history: pd.DataFrame, prediction: Dict[str, Any]) -> "go.Figure":
     """
     Build a line chart of recent actual demand, with the new next-hour
     prediction plotted as a distinct marker right after it.
@@ -29,7 +29,9 @@ def make_prediction_figures(history: pd.DataFrame, prediction: Dict[str, Any]) -
 
     Returns:
         go.Figure: A plotly figure ready to hand to dcc.Graph.
+    
     """
+    import plotly.graph_objects as go
     x_hist = list(range(len(history)))
 
     fig = go.Figure()
